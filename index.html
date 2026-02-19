@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在宅医療DXナレッジ・バンク</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        [x-cloak] { display: none !important; }
+        .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .preview-box { position: relative; width: 100%; height: 240px; overflow: hidden; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+        .preview-box img { width: 100%; height: auto; position: absolute; top: 0; left: 0; transition: transform 3.5s ease-in-out; transform-origin: top; }
+        .group:hover .preview-box img { transform: translateY(calc(-100% + 240px)); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen" x-data="galleryApp()" x-init="init()">
+
+    <nav class="glass-nav sticky top-0 z-40 py-4 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" @click="goHome()">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path></svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">在宅医療DXナレッジ・バンク</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button @click="isAdmin = !isAdmin" :class="isAdmin ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'" class="text-xs font-bold px-3 py-1 rounded-full transition-colors">
+                    <span x-text="isAdmin ? '🔓 管理モード中' : '🔒 管理ログイン'"></span>
+                </button>
+                <button x-show="isAdmin" @click="openModalForAdd()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg active:scale-95 transition-all">
+                    新規登録
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        <div x-show="isLoading" class="text-center py-20">
+            <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="text-slate-400 font-bold tracking-widest">LOADING DATA...</p>
+        </div>
+
+        <div x-show="view === 'list' && !isLoading" x-transition>
+            <div class="mb-12">
+                <h2 class="text-4xl font-black text-slate-800 mb-6 tracking-tight uppercase">Knowledge Archive</h2>
+                <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div class="relative w-full md:max-w-md group">
+                        <span class="absolute inset-y-0 left-4 flex items-center text-slate-400 group-focus-within:text-indigo-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" x-model="searchQuery" placeholder="タイトル検索..." class="w-full pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="tag in ['All', '営業', '採用', '効率化', '組織開発', 'マニュアル']">
+                            <button @click="activeTag = tag" :class="activeTag === tag ? 'bg-indigo-600 text-white shadow-indigo-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'" class="px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm" x-text="tag"></button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <template x-for="item in filteredItems()" :key="item.id">
+                    <div class="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl transition-all group relative">
+                        <div x-show="isAdmin" class="absolute top-4 left-4 z-10 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button @click.stop="openModalForEdit(item)" class="bg-white/95 backdrop-blur p-2.5 rounded-full shadow-lg text-indigo-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                            <button @click.stop="deleteEntry(item.id)" class="bg-white/95 backdrop-blur p-2.5 rounded-full shadow-lg text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                        <div class="preview-box cursor-pointer" @click="showDetail(item.id)"><img :src="item.image" loading="lazy"></div>
+                        <div class="p-8">
+                            <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest mb-3 inline-block" x-text="item.tag"></span>
+                            <h3 class="text-xl font-bold leading-snug mb-6 line-clamp-2 min-h-[3.5rem]" x-text="item.title"></h3>
+                            <button @click.stop="copyPrompt(item.prompt)" class="w-full py-3 bg-slate-50 hover:bg-indigo-600 text-slate-500 hover:text-white rounded-2xl text-xs font-bold transition-all">コピー</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="view === 'detail'" x-cloak x-transition>
+            <template x-if="selectedItem">
+                <div class="max-w-4xl mx-auto">
+                    <button @click="goHome()" class="mb-8 font-bold text-slate-400 hover:text-indigo-600 flex items-center group">&larr; 一覧に戻る</button>
+                    <div class="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
+                        <div class="bg-slate-100 p-8 flex justify-center"><img :src="selectedItem.image" class="max-w-full shadow-lg rounded-lg border border-white"></div>
+                        <div class="p-12">
+                            <h2 class="text-4xl font-black mb-8 tracking-tight" x-text="selectedItem.title"></h2>
+                            <pre class="bg-slate-900 text-slate-100 p-8 rounded-[2rem] font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner" x-text="selectedItem.prompt"></pre>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <div x-show="openModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @paste.window="handlePaste($event)">
+        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-md" @click="openModal = false"></div>
+        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-2xl relative shadow-2xl overflow-y-auto max-h-[92vh]">
+            <h3 class="text-3xl font-black mb-8" x-text="isEditing ? 'ノウハウを編集' : '新規登録'"></h3>
+            <div class="space-y-6">
+                <input x-model="adminPass" type="password" placeholder="Admin Password" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                <input x-model="form.title" type="text" placeholder="Title" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200">
+                <select x-model="form.tag" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200">
+                    <template x-for="t in ['営業', '採用', '効率化', '組織開発', 'マニュアル']">
+                        <option :value="t" x-text="t"></option>
+                    </template>
+                </select>
+                <div class="relative border-2 border-dashed border-slate-200 rounded-[2rem] p-8 text-center bg-slate-50 hover:bg-slate-100 overflow-hidden">
+                    <template x-if="form.imagePreview">
+                        <div class="relative inline-block">
+                            <img :src="form.imagePreview" class="max-h-56 mx-auto rounded-2xl shadow-xl">
+                            <div class="mt-2 text-[10px] font-bold" :class="dataSize > 40000 ? 'text-red-500' : 'text-green-500'">文字数: <span x-text="dataSize"></span> / 50000</div>
+                        </div>
+                    </template>
+                    <template x-if="!form.imagePreview">
+                        <p class="text-slate-400 text-sm font-bold">貼り付け(Ctrl+V)か選択</p>
+                    </template>
+                    <input type="file" @change="handleFile($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                </div>
+                <textarea x-model="form.prompt" rows="6" placeholder="Prompt" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 font-mono text-sm leading-relaxed"></textarea>
+            </div>
+            <div class="mt-10 flex justify-end space-x-4">
+                <button @click="openModal = false" class="font-bold text-slate-400">キャンセル</button>
+                <button @click="submitForm()" :disabled="isSubmitting || !adminPass || dataSize > 48000" class="bg-indigo-600 text-white px-12 py-4 rounded-[1.5rem] font-black shadow-2xl active:scale-95 disabled:opacity-30">
+                    <span x-show="!isSubmitting" x-text="isEditing ? '更新する' : '保存する'"></span>
+                    <span x-show="isSubmitting">保存中...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showToast" x-cloak x-transition class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-[100] font-bold text-sm" x-text="toastMessage"></div>
+
+    <script>
+        const GAS_API_URL = 'https://script.google.com/a/macros/funaisoken.co.jp/s/AKfycbwFakkylU5iXFK6aJNuoP4AzNwBLKME2dqB9I3wF3dyuP7w2k1ruPRGEQygi_Txcd2u/exec'; // ★コピーしたURLをここへ！
+
+        function galleryApp() {
+            return {
+                view: 'list', isAdmin: false, isEditing: false, openModal: false, isSubmitting: false, isLoading: true, showToast: false, toastMessage: '', activeTag: 'All', searchQuery: '', adminPass: '', selectedItem: null, items: [], dataSize: 0,
+                form: { id: null, title: '', tag: '効率化', prompt: '', imagePreview: null },
+
+                async init() {
+                    this.isLoading = true;
+                    try {
+                        const res = await fetch(GAS_API_URL);
+                        const json = await res.json();
+                        this.items = json.success ? (json.data || []) : [];
+                    } catch (e) {
+                        console.error('Fetch error:', e);
+                        this.items = [];
+                    }
+                    this.isLoading = false;
+
+                    const id = new URLSearchParams(window.location.search).get('id');
+                    if (id) setTimeout(() => this.showDetail(id), 500);
+                },
+
+                filteredItems() {
+                    return this.items.filter(i => {
+                        const matchesTag = this.activeTag === 'All' || i.tag === this.activeTag;
+                        const matchesSearch = i.title.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        return matchesTag && matchesSearch;
+                    });
+                },
+
+                openModalForAdd() { this.isEditing = false; this.form = { id: null, title: '', tag: '効率化', prompt: '', imagePreview: null }; this.dataSize = 0; this.openModal = true; },
+                openModalForEdit(item) { this.isEditing = true; this.form = { ...item, imagePreview: item.image }; this.dataSize = item.image ? item.image.length : 0; this.openModal = true; },
+                handleFile(e) { if (e.target.files[0]) this.processFile(e.target.files[0]); },
+                handlePaste(e) {
+                    if (!this.openModal) return;
+                    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                    for (let item of items) { if (item.kind === 'file' && item.type.includes('image')) this.processFile(item.getAsFile()); }
+                },
+
+                async processFile(file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            let quality = 0.7; let maxWidth = 600;
+                            const compress = (w, q) => {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width; let height = img.height;
+                                if (width > w) { height *= w / width; width = w; }
+                                canvas.width = width; canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                return canvas.toDataURL('image/jpeg', q);
+                            };
+                            let result = compress(maxWidth, quality);
+                            while (result.length > 45000 && maxWidth > 100) { maxWidth -= 50; quality -= 0.1; result = compress(maxWidth, Math.max(quality, 0.1)); }
+                            this.form.imagePreview = result; this.dataSize = result.length;
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                async submitForm() {
+                    this.isSubmitting = true;
+                    try {
+                        const action = this.isEditing ? 'update' : 'add';
+                        const res = await fetch(GAS_API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' }, // CORSを回避するための設定
+                            body: JSON.stringify({ action: action, password: this.adminPass, item: this.form })
+                        });
+                        const json = await res.json();
+                        if (json.success) {
+                            this.openModal = false;
+                            this.triggerToast('保存完了');
+                            await this.init();
+                        } else {
+                            alert('Error: ' + json.error);
+                        }
+                    } catch (e) {
+                        alert('Communication error: ' + e.message);
+                    }
+                    this.isSubmitting = false;
+                },
+
+                async deleteEntry(id) {
+                    const pass = prompt('Admin Password?');
+                    if (pass && confirm('Delete?')) {
+                        try {
+                            const res = await fetch(GAS_API_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain' },
+                                body: JSON.stringify({ action: 'delete', id: id, password: pass })
+                            });
+                            const json = await res.json();
+                            if (json.success) { this.triggerToast('削除しました'); await this.init(); }
+                            else { alert('Error: ' + json.error); }
+                        } catch (e) { alert(e.message); }
+                    }
+                },
+
+                showDetail(id) {
+                    const item = this.items.find(i => i.id === id);
+                    if (item) { this.selectedItem = item; this.view = 'detail'; window.history.pushState({id}, '', `?id=${id}`); window.scrollTo(0,0); }
+                },
+
+                goHome() { this.view = 'list'; window.history.pushState({}, '', window.location.pathname); },
+                copyPrompt(t) { navigator.clipboard.writeText(t); this.triggerToast('コピーしました'); },
+                triggerToast(m) { this.toastMessage = m; this.showToast = true; setTimeout(() => this.showToast = false, 3000); }
+            }
+        }
+    </script>
+</body>
+</html>
