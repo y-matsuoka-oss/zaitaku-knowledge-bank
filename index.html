@@ -4,227 +4,543 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在宅医療DXナレッジ・バンク</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Noto Sans JP', sans-serif; }
+        body { 
+            font-family: 'Noto Sans JP', sans-serif; 
+            scroll-behavior: smooth;
+        }
         [x-cloak] { display: none !important; }
-        .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .preview-box { position: relative; width: 100%; height: 260px; overflow: hidden; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
-        .preview-box img { width: 100%; height: auto; position: absolute; top: 0; left: 0; transition: transform 3.5s ease-in-out; transform-origin: top; }
-        .group:hover .preview-box img { transform: translateY(calc(-100% + 260px)); }
+        
+        /* ナビゲーションの透過ガラス効果 */
+        .glass-nav { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(0,0,0,0.05); 
+        }
+
+        /* 画像ホバースクロール効果 */
+        .preview-box { 
+            position: relative; 
+            width: 100%; 
+            height: 260px; 
+            overflow: hidden; 
+            background: #f8fafc; 
+            border-bottom: 1px solid #f1f5f9; 
+        }
+        .preview-box img { 
+            width: 100%; 
+            height: auto; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            transition: transform 4s ease-in-out; 
+            transform-origin: top; 
+        }
+        .group:hover .preview-box img { 
+            transform: translateY(calc(-100% + 260px)); 
+        }
+
+        /* カードの影設定 */
+        .card-shadow { 
+            box-shadow: 0 10px 50px -12px rgba(0, 0, 0, 0.05); 
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen" x-data="galleryApp()" x-init="init()">
 
-    <nav class="glass-nav sticky top-0 z-40 py-4 shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
-            <div class="flex items-center space-x-3 cursor-pointer" @click="goHome()">
-                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path></svg>
+    <div x-cloak>
+        
+        <nav class="glass-nav sticky top-0 z-40 py-4 shadow-sm">
+            <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                <div class="flex items-center space-x-3 cursor-pointer group" @click="goHome()">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 group-active:scale-95 transition-transform">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-800">在宅医療DXナレッジ・バンク</h1>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight">在宅医療DXナレッジ・バンク</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button @click="isAdmin = !isAdmin" :class="isAdmin ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'" class="text-xs font-bold px-3 py-1 rounded-full transition-colors">
-                    <span x-text="isAdmin ? '🔓 管理モード中' : '🔒 管理ログイン'"></span>
-                </button>
-                <button x-show="isAdmin" @click="openModalForAdd()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg active:scale-95 transition-all">新規登録</button>
-            </div>
-        </div>
-    </nav>
 
-    <main class="max-w-7xl mx-auto px-6 py-12">
-        <div x-show="isLoading" class="text-center py-20">
-            <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <p class="text-slate-400 font-bold uppercase tracking-widest">Loading...</p>
-        </div>
-
-        <div x-show="view === 'list' && !isLoading" x-transition>
-            <div class="mb-12">
-                <h2 class="text-4xl font-black text-slate-800 mb-6 tracking-tight uppercase">Knowledge Archive</h2>
-                <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="relative w-full md:max-w-md">
-                        <input type="text" x-model="searchQuery" placeholder="タイトル検索..." class="w-full pl-6 pr-6 py-3 bg-slate-50 border-none rounded-2xl ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <template x-for="tag in ['All', '営業', '採用', '効率化', '組織開発', 'マニュアル']">
-                            <button @click="activeTag = tag" :class="activeTag === tag ? 'bg-indigo-600 text-white shadow-indigo-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'" class="px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm" x-text="tag"></button>
-                        </template>
-                    </div>
+                <div class="flex items-center space-x-4">
+                    <button 
+                        @click="isAdmin = !isAdmin" 
+                        :class="isAdmin ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-200' : 'text-slate-400'" 
+                        class="text-[10px] font-black px-4 py-1.5 rounded-full transition-all uppercase tracking-widest"
+                    >
+                        <span x-text="isAdmin ? '🔓 Admin Mode' : '🔒 Read Only'"></span>
+                    </button>
+                    
+                    <button 
+                        x-show="isAdmin" 
+                        @click="openModalForAdd()" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg active:scale-95 transition-all flex items-center"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        新規ナレッジ登録
+                    </button>
                 </div>
             </div>
+        </nav>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <template x-for="item in filteredItems()" :key="item.id">
-                    <div class="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl transition-all group relative">
-                        <div x-show="isAdmin" class="absolute top-4 left-4 z-10 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button @click.stop="openModalForEdit(item)" class="bg-white/95 backdrop-blur p-2.5 rounded-full shadow-lg text-indigo-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                            <button @click.stop="deleteEntry(item.id)" class="bg-white/95 backdrop-blur p-2.5 rounded-full shadow-lg text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+        <main class="max-w-7xl mx-auto px-6 py-12">
+            
+            <div x-show="isLoading" class="flex flex-col items-center justify-center py-32" x-transition>
+                <svg class="animate-spin h-12 w-12 text-indigo-600 mb-6" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-slate-400 font-bold tracking-[0.2em] text-xs uppercase animate-pulse">Fetching Database Content...</p>
+            </div>
+
+            <div x-show="view === 'list' && !isLoading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4">
+                
+                <div class="mb-16">
+                    <div class="flex items-center space-x-4 mb-8">
+                        <div class="h-px bg-slate-200 flex-grow"></div>
+                        <h2 class="text-sm font-black text-slate-400 tracking-[0.3em] uppercase">Archive Explorer</h2>
+                        <div class="h-px bg-slate-200 flex-grow"></div>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between bg-white p-8 rounded-[2.5rem] border border-slate-100 card-shadow">
+                        <div class="relative w-full lg:max-w-md group">
+                            <span class="absolute inset-y-0 left-5 flex items-center text-slate-300 group-focus-within:text-indigo-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </span>
+                            <input 
+                                type="text" 
+                                x-model="searchQuery" 
+                                placeholder="タイトルや内容から検索..." 
+                                class="w-full pl-14 pr-8 py-4 bg-slate-50 border-none rounded-2xl ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-sm"
+                            >
                         </div>
-                        <div class="preview-box cursor-pointer" @click="showDetail(item.id)"><img :src="item.image" loading="lazy"></div>
-                        <div class="p-8">
-                            <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase mb-3 inline-block" x-text="item.tag"></span>
-                            <h3 class="text-xl font-bold leading-snug mb-6 line-clamp-2 min-h-[3.5rem]" x-text="item.title"></h3>
-                            <button @click.stop="copyPrompt(item.prompt)" class="w-full py-3 bg-slate-50 hover:bg-indigo-600 text-slate-500 hover:text-white rounded-2xl text-xs font-bold transition-all">コピー</button>
+                        
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="tag in ['All', '営業', '採用', '効率化', '組織開発', 'マニュアル']">
+                                <button 
+                                    @click="activeTag = tag" 
+                                    :class="activeTag === tag ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'" 
+                                    class="px-6 py-2.5 rounded-xl text-xs font-bold transition-all"
+                                    x-text="tag"
+                                ></button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <template x-for="item in filteredItems()" :key="item.id">
+                        <div class="bg-white rounded-[3rem] overflow-hidden border border-slate-100 card-shadow hover:shadow-2xl transition-all duration-500 group relative flex flex-col">
+                            
+                            <div x-show="isAdmin" class="absolute top-6 left-6 z-10 flex space-x-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                                <button @click.stop="openModalForEdit(item)" class="bg-white/95 backdrop-blur p-3 rounded-2xl shadow-xl text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button @click.stop="deleteEntry(item.id)" class="bg-white/95 backdrop-blur p-3 rounded-2xl shadow-xl text-red-600 hover:bg-red-600 hover:text-white transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                            
+                            <div class="preview-box cursor-pointer" @click="showDetail(item.id)">
+                                <img :src="item.image" loading="lazy">
+                                <div class="absolute inset-0 bg-indigo-900/0 group-hover:bg-indigo-900/10 transition-colors pointer-events-none"></div>
+                            </div>
+                            
+                            <div class="p-10 flex-grow flex flex-col">
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full uppercase tracking-widest" x-text="item.tag"></span>
+                                </div>
+                                <h3 class="text-xl font-bold leading-tight mb-8 text-slate-800 line-clamp-2 min-h-[3.5rem] group-hover:text-indigo-600 transition-colors" x-text="item.title"></h3>
+                                <div class="mt-auto">
+                                    <button 
+                                        @click.stop="copyPrompt(item.prompt)" 
+                                        class="w-full py-4 bg-slate-50 hover:bg-indigo-600 text-slate-400 hover:text-white rounded-[1.5rem] text-xs font-black tracking-widest transition-all duration-300 uppercase active:scale-95 shadow-inner"
+                                    >
+                                        Copy Knowledge
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div x-show="view === 'detail'" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95">
+                <template x-if="selectedItem">
+                    <div class="max-w-4xl mx-auto">
+                        <button 
+                            @click="goHome()" 
+                            class="mb-10 font-black text-xs tracking-widest text-slate-400 hover:text-indigo-600 flex items-center group transition-all uppercase"
+                        >
+                            <span class="mr-3 bg-white p-2 rounded-full shadow-sm group-hover:-translate-x-1 transition-transform">&larr;</span> Back to Archive
+                        </button>
+                        
+                        <div class="bg-white rounded-[4rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col card-shadow">
+                            <div class="bg-slate-50 p-12 flex justify-center border-b border-slate-100">
+                                <img :src="selectedItem.image" class="max-w-full shadow-2xl rounded-2xl border-4 border-white transform hover:scale-[1.02] transition-transform duration-500">
+                            </div>
+                            
+                            <div class="p-16">
+                                <div class="flex items-center space-x-4 mb-6">
+                                    <span class="w-12 h-1 bg-indigo-600 rounded-full"></span>
+                                    <span class="text-xs font-black text-indigo-600 uppercase tracking-widest" x-text="selectedItem.tag"></span>
+                                </div>
+                                <h2 class="text-4xl font-black mb-12 text-slate-800 leading-tight" x-text="selectedItem.title"></h2>
+                                
+                                <div class="relative group">
+                                    <div class="absolute -top-4 -left-4 w-12 h-12 bg-indigo-600/10 rounded-full -z-10 group-hover:scale-150 transition-transform"></div>
+                                    <pre class="bg-slate-900 text-slate-100 p-10 rounded-[2.5rem] font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-2xl border-t border-white/10" x-text="selectedItem.prompt"></pre>
+                                    <button 
+                                        @click="copyPrompt(selectedItem.prompt)" 
+                                        class="absolute top-6 right-6 bg-white/10 hover:bg-indigo-500 text-white text-[10px] font-black px-6 py-2 rounded-full backdrop-blur-md transition-all uppercase tracking-widest border border-white/20"
+                                    >
+                                        Copy Code
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </template>
             </div>
-        </div>
+        </main>
+    </div>
 
-        <div x-show="view === 'detail'" x-cloak x-transition>
-            <template x-if="selectedItem">
-                <div class="max-w-4xl mx-auto">
-                    <button @click="goHome()" class="mb-8 font-bold text-slate-400 hover:text-indigo-600 flex items-center group">&larr; 一覧に戻る</button>
-                    <div class="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
-                        <div class="bg-slate-100 p-8 flex justify-center"><img :src="selectedItem.image" class="max-w-full shadow-lg rounded-lg border border-white"></div>
-                        <div class="p-12">
-                            <h2 class="text-4xl font-black mb-8 tracking-tight" x-text="selectedItem.title"></h2>
-                            <pre class="bg-slate-900 text-slate-100 p-8 rounded-[2rem] font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner" x-text="selectedItem.prompt"></pre>
-                        </div>
+    <div x-show="openModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-6" @paste.window="handlePaste($event)">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-lg" @click="openModal = false" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"></div>
+        
+        <div 
+            class="bg-white rounded-[3.5rem] p-12 w-full max-w-3xl relative shadow-2xl overflow-y-auto max-h-[90vh] card-shadow"
+            x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+        >
+            <div class="flex justify-between items-center mb-10">
+                <h3 class="text-3xl font-black text-slate-800 tracking-tight" x-text="isEditing ? 'ナレッジを編集する' : '新規ナレッジを登録'"></h3>
+                <button @click="openModal = false" class="text-slate-300 hover:text-slate-500 transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-3 px-1 uppercase tracking-[0.2em]">Administrator Password</label>
+                    <input x-model="adminPass" type="password" placeholder="管理パスワードを入力" class="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-bold">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 mb-3 px-1 uppercase tracking-[0.2em]">Knowledge Title</label>
+                        <input x-model="form.title" type="text" placeholder="タイトルの入力" class="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 mb-3 px-1 uppercase tracking-[0.2em]">Tag / Category</label>
+                        <select x-model="form.tag" class="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
+                            <template x-for="t in ['営業', '採用', '効率化', '組織開発', 'マニュアル']">
+                                <option :value="t" x-text="t"></option>
+                            </template>
+                        </select>
                     </div>
                 </div>
-            </template>
-        </div>
-    </main>
 
-    <div x-show="openModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @paste.window="handlePaste($event)">
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-md" @click="openModal = false"></div>
-        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-2xl relative shadow-2xl overflow-y-auto max-h-[92vh]">
-            <h3 class="text-3xl font-black mb-8" x-text="isEditing ? 'ノウハウを編集' : '新規登録'"></h3>
-            <div class="space-y-6">
-                <input x-model="adminPass" type="password" placeholder="Admin Password" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200">
-                <input x-model="form.title" type="text" placeholder="Title" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200">
-                <select x-model="form.tag" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200">
-                    <template x-for="t in ['営業', '採用', '効率化', '組織開発', 'マニュアル']">
-                        <option :value="t" x-text="t"></option>
-                    </template>
-                </select>
-                <div class="relative border-2 border-dashed border-slate-200 rounded-[2rem] p-8 text-center bg-slate-50">
-                    <template x-if="form.imagePreview">
-                        <img :src="form.imagePreview" class="max-h-56 mx-auto rounded-2xl shadow-xl">
-                    </template>
-                    <template x-if="!form.imagePreview">
-                        <p class="text-slate-400 text-sm font-bold leading-relaxed">画像を貼り付け(Ctrl+V)<br>または選択</p>
-                    </template>
-                    <input type="file" @change="handleFile($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-3 px-1 uppercase tracking-[0.2em]">Reference Image (Ctrl+V to Paste)</label>
+                    <div class="relative border-4 border-dashed border-slate-100 rounded-[2.5rem] p-10 text-center bg-slate-50 hover:bg-slate-100 min-h-[200px] flex flex-col justify-center overflow-hidden transition-all group">
+                        <template x-if="form.imagePreview">
+                            <div class="relative inline-block">
+                                <img :src="form.imagePreview" class="max-h-64 mx-auto rounded-2xl shadow-2xl border-4 border-white">
+                                <div class="mt-4 flex items-center justify-center space-x-2">
+                                    <span class="w-2 h-2 rounded-full" :class="dataSize > 40000 ? 'bg-red-500' : 'bg-green-500'"></span>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Payload: <span x-text="Math.round(dataSize/1000)"></span>KB / 50KB Limit
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!form.imagePreview">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-slate-200 mb-4 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <p class="text-slate-400 text-xs font-bold leading-relaxed">クリップボードから画像を貼り付け<br>またはここをクリックしてファイルを選択</p>
+                            </div>
+                        </template>
+                        <input type="file" @change="handleFile($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                    </div>
                 </div>
-                <textarea x-model="form.prompt" rows="6" placeholder="Prompt" class="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 font-mono text-sm"></textarea>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-3 px-1 uppercase tracking-[0.2em]">Knowledge Description / Prompt</label>
+                    <textarea x-model="form.prompt" rows="8" placeholder="AIへの指示文や、ナレッジの具体的な内容を入力してください。" class="w-full px-8 py-6 bg-slate-50 rounded-[2rem] border-none ring-1 ring-slate-200 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 transition-all outline-none shadow-inner"></textarea>
+                </div>
             </div>
-            <div class="mt-10 flex justify-end space-x-4">
-                <button @click="openModal = false" class="font-bold text-slate-400">キャンセル</button>
-                <button @click="submitForm()" :disabled="isSubmitting || !adminPass" class="bg-indigo-600 text-white px-12 py-4 rounded-[1.5rem] font-black shadow-2xl active:scale-95 disabled:opacity-30">
-                    <span x-text="isSubmitting ? '保存中...' : '保存する'"></span>
+
+            <div class="mt-12 flex justify-end items-center space-x-6">
+                <button @click="openModal = false" class="font-black text-xs tracking-widest text-slate-300 hover:text-slate-500 transition-all uppercase">Cancel</button>
+                <button 
+                    @click="submitForm()" 
+                    :disabled="isSubmitting || !adminPass || dataSize > 48000" 
+                    class="bg-indigo-600 text-white px-14 py-5 rounded-[2rem] font-black shadow-2xl active:scale-95 disabled:opacity-30 transition-all flex items-center uppercase tracking-widest text-xs"
+                >
+                    <span x-show="!isSubmitting" x-text="isEditing ? 'Update Knowledge' : 'Save Knowledge'"></span>
+                    <span x-show="isSubmitting" class="flex items-center">
+                        <svg class="animate-spin h-4 w-4 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Processing...
+                    </span>
                 </button>
             </div>
         </div>
     </div>
 
-    <div x-show="showToast" x-cloak x-transition class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-[100] font-bold text-sm" x-text="toastMessage"></div>
+    <div 
+        x-show="showToast" 
+        x-cloak 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-10"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-end="opacity-0 translate-y-10"
+        class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-10 py-5 rounded-3xl shadow-2xl z-[100] font-black text-[10px] tracking-[0.2em] uppercase flex items-center border border-white/10"
+    >
+        <span class="w-2 h-2 bg-indigo-500 rounded-full mr-4 animate-ping"></span>
+        <span x-text="toastMessage"></span>
+    </div>
 
     <script>
-        const GAS_API_URL = 'https://script.google.com/a/macros/funaisoken.co.jp/s/AKfycbxbPz9Hvnxmber177QrBUEGM3QuYjuP3nFIEH4ENUg3ClcqV80J_MN9DFgzzGVSPr_f/exec'; 
+        /**
+         * ==========================================
+         * ★重要：ここにGASの最新デプロイURLを貼り付け★
+         * ==========================================
+         */
+        const GAS_API_URL = '★ここに新しいGASのURLを貼り付け★'; 
 
         function galleryApp() {
             return {
-                view: 'list', isAdmin: false, isEditing: false, openModal: false, isSubmitting: false, isLoading: true, showToast: false, toastMessage: '', activeTag: 'All', searchQuery: '', adminPass: '', selectedItem: null, items: [], 
+                // 状態管理
+                view: 'list', 
+                isAdmin: false, 
+                isEditing: false, 
+                openModal: false, 
+                isSubmitting: false, 
+                isLoading: true, 
+                showToast: false, 
+                toastMessage: '', 
+                activeTag: 'All', 
+                searchQuery: '', 
+                adminPass: '', 
+                selectedItem: null, 
+                items: [], 
+                dataSize: 0,
                 form: { id: null, title: '', tag: '効率化', prompt: '', imagePreview: null },
 
+                /**
+                 * 初期化：GASからデータを取得
+                 */
                 async init() {
                     this.isLoading = true;
                     try {
-                        const res = await fetch(GAS_API_URL);
-                        const json = await res.json();
-                        this.items = json.success ? (json.data || []) : [];
-                    } catch (e) { console.error(e); }
-                    this.isLoading = false;
-                    const id = new URLSearchParams(window.location.search).get('id');
-                    if (id) setTimeout(() => this.showDetail(id), 500);
+                        const response = await fetch(GAS_API_URL);
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            this.items = result.data || [];
+                            // URLパラメータにIDがあれば、詳細画面から開始
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const idFromUrl = urlParams.get('id');
+                            if (idFromUrl) {
+                                setTimeout(() => this.showDetail(idFromUrl), 600);
+                            }
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        console.error('Fetch Error:', error);
+                        alert('データの読み込みに失敗しました。GASのデプロイURLが正しいか、アクセス権が「全員」になっているか確認してください。');
+                    } finally {
+                        this.isLoading = false;
+                    }
                 },
 
+                /**
+                 * 検索とタグによる高度なフィルタリング
+                 */
                 filteredItems() {
-                    return this.items.filter(i => {
-                        const matchesTag = this.activeTag === 'All' || i.tag === this.activeTag;
-                        const matchesSearch = i.title.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    const query = this.searchQuery.toLowerCase();
+                    return this.items.filter(item => {
+                        const matchesTag = this.activeTag === 'All' || item.tag === this.activeTag;
+                        const matchesSearch = 
+                            item.title.toLowerCase().includes(query) || 
+                            item.prompt.toLowerCase().includes(query) ||
+                            item.tag.toLowerCase().includes(query);
                         return matchesTag && matchesSearch;
                     });
                 },
 
-                openModalForAdd() { this.isEditing = false; this.form = { id: null, title: '', tag: '効率化', prompt: '', imagePreview: null }; this.openModal = true; },
-                openModalForEdit(item) { this.isEditing = true; this.form = { ...item, imagePreview: item.image }; this.openModal = true; },
-                handleFile(e) { if (e.target.files[0]) this.processFile(e.target.files[0]); },
+                // モーダル制御
+                openModalForAdd() { 
+                    this.isEditing = false; 
+                    this.form = { id: null, title: '', tag: '効率化', prompt: '', imagePreview: null }; 
+                    this.dataSize = 0; 
+                    this.openModal = true; 
+                },
+                openModalForEdit(item) { 
+                    this.isEditing = true; 
+                    this.form = { ...item, imagePreview: item.image }; 
+                    this.dataSize = item.image ? item.image.length : 0; 
+                    this.openModal = true; 
+                },
+
+                /**
+                 * 画像の処理と圧縮
+                 */
+                handleFile(e) { 
+                    const file = e.target.files[0];
+                    if (file) this.processFile(file); 
+                },
                 handlePaste(e) {
                     if (!this.openModal) return;
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                    for (let item of items) { if (item.kind === 'file' && item.type.includes('image')) this.processFile(item.getAsFile()); }
+                    for (let item of items) {
+                        if (item.kind === 'file' && item.type.includes('image')) {
+                            this.processFile(item.getAsFile());
+                        }
+                    }
                 },
-
                 async processFile(file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const img = new Image();
                         img.onload = () => {
-                            let quality = 0.7; let maxWidth = 550;
+                            let quality = 0.75; 
+                            let maxWidth = 550;
                             const compress = (w, q) => {
                                 const canvas = document.createElement('canvas');
-                                let width = img.width; let height = img.height;
+                                let width = img.width;
+                                let height = img.height;
                                 if (width > w) { height *= w / width; width = w; }
-                                canvas.width = width; canvas.height = height;
+                                canvas.width = width;
+                                canvas.height = height;
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0, width, height);
                                 return canvas.toDataURL('image/jpeg', q);
                             };
+                            
                             let result = compress(maxWidth, quality);
-                            while (result.length > 38000 && maxWidth > 100) { maxWidth -= 50; quality -= 0.1; result = compress(maxWidth, Math.max(quality, 0.1)); }
+                            // 50,000文字の制限に収まるまで再圧縮
+                            while (result.length > 39000 && maxWidth > 150) {
+                                maxWidth -= 50;
+                                quality -= 0.1;
+                                result = compress(maxWidth, Math.max(quality, 0.1));
+                            }
                             this.form.imagePreview = result;
+                            this.dataSize = result.length;
                         };
                         img.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
                 },
 
+                /**
+                 * サーバーへのデータ送信（追加・更新）
+                 */
                 async submitForm() {
+                    if (!this.form.title || !this.form.prompt) {
+                        return alert('タイトルと内容を入力してください。');
+                    }
                     this.isSubmitting = true;
+                    
                     try {
-                        const action = this.isEditing ? 'update' : 'add';
-                        const res = await fetch(GAS_API_URL, {
+                        const actionType = this.isEditing ? 'update' : 'add';
+                        const payload = {
+                            action: actionType,
+                            password: this.adminPass,
+                            item: {
+                                ...this.form,
+                                image: this.form.imagePreview
+                            }
+                        };
+
+                        const response = await fetch(https://script.google.com/a/macros/funaisoken.co.jp/s/AKfycbxvxL0poEezQ9BrlfvYi1Z0LF8HPmh2fgQEa9CV1pW2xKCqFTZ9jqcQSNhU69YWv90A/exec, {
                             method: 'POST',
                             headers: { 'Content-Type': 'text/plain' },
-                            body: JSON.stringify({ action: action, password: this.adminPass, item: this.form })
+                            body: JSON.stringify(payload)
                         });
-                        const json = await res.json();
-                        if (json.success) { this.openModal = false; this.triggerToast('保存完了'); await this.init(); }
-                        else { alert('Error: ' + json.error); }
-                    } catch (e) { alert(e.message); }
-                    this.isSubmitting = false;
-                },
-
-                async deleteEntry(id) {
-                    const pass = prompt('Admin Password?');
-                    if (pass && confirm('Delete?')) {
-                        try {
-                            const res = await fetch(GAS_API_URL, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'text/plain' },
-                                body: JSON.stringify({ action: 'delete', id: id, password: pass })
-                            });
-                            const json = await res.json();
-                            if (json.success) { this.triggerToast('削除しました'); await this.init(); }
-                            else { alert('Error: ' + json.error); }
-                        } catch (e) { alert(e.message); }
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            this.openModal = false;
+                            this.triggerToast(this.isEditing ? 'KNOWLEDGE UPDATED' : 'KNOWLEDGE SAVED');
+                            await this.init(); // 一覧を再取得
+                        } else {
+                            alert('エラー: ' + result.error);
+                        }
+                    } catch (error) {
+                        alert('サーバーとの通信に失敗しました: ' + error.message);
+                    } finally {
+                        this.isSubmitting = false;
                     }
                 },
 
-                showDetail(id) {
-                    const item = this.items.find(i => i.id === id);
-                    if (item) { this.selectedItem = item; this.view = 'detail'; window.history.pushState({id}, '', `?id=${id}`); window.scrollTo(0,0); }
+                /**
+                 * データの削除
+                 */
+                async deleteEntry(id) {
+                    const pass = prompt('管理者パスワードを入力してください');
+                    if (pass && confirm('このナレッジを削除してもよろしいですか？')) {
+                        try {
+                            const response = await fetch(GAS_API_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain' },
+                                body: JSON.stringify({ 
+                                    action: 'delete', 
+                                    id: id, 
+                                    password: pass 
+                                })
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                this.triggerToast('KNOWLEDGE DELETED');
+                                await this.init();
+                            } else {
+                                alert('エラー: ' + result.error);
+                            }
+                        } catch (error) {
+                            alert('通信エラー: ' + error.message);
+                        }
+                    }
                 },
 
-                goHome() { this.view = 'list'; window.history.pushState({}, '', window.location.pathname); },
-                copyPrompt(t) { navigator.clipboard.writeText(t); this.triggerToast('コピーしました'); },
-                triggerToast(m) { this.toastMessage = m; this.showToast = true; setTimeout(() => this.showToast = false, 3000); }
+                /**
+                 * 画面遷移・ユーティリティ
+                 */
+                showDetail(id) {
+                    const item = this.items.find(i => String(i.id) === String(id));
+                    if (item) {
+                        this.selectedItem = item;
+                        this.view = 'detail';
+                        window.history.pushState({id}, '', `?id=${id}`);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                },
+                goHome() {
+                    this.view = 'list';
+                    window.history.pushState({}, '', window.location.pathname);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                copyPrompt(text) {
+                    navigator.clipboard.writeText(text);
+                    this.triggerToast('PROMPT COPIED');
+                },
+                triggerToast(message) {
+                    this.toastMessage = message;
+                    this.showToast = true;
+                    setTimeout(() => this.showToast = false, 3000);
+                }
             }
         }
     </script>
